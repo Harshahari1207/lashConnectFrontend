@@ -6,6 +6,7 @@ export const theme = {
     surface: "#FFFFFF",
     text: "#0F172A",
     textSecondary: "#64748B",
+    muted: "#94A3B8",
     border: "#E2E8F0",
     success: "#16A34A",
     danger: "#DC2626",

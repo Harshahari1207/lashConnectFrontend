@@ -1,7 +1,4 @@
-import React, {
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   ActivityIndicator,
@@ -10,72 +7,60 @@ import {
   View,
 } from "react-native";
 
-import {
-  getCameraStream,
-} from "../../api/deviceApi";
+import Video from "react-native-video";
 
-import PTZControls from
-  "./PTZControls";
+import { getCameraStream } from "../../api/deviceApi";
+import PTZControls from "./PTZControls";
+import type { StreamInfo } from "../../types/device";
 
-import {
-  StreamInfo,
-} from "../../types/device";
+export default function LiveCameraScreen({ route }: any) {
+  const { deviceId } = route.params;
 
-import {
-  theme,
-} from "../../theme/theme";
-
-export default function LiveCameraScreen({
-  route,
-}: any) {
-  const {
-    deviceId,
-    openPTZ,
-  } = route.params;
-
-  const [stream, setStream] =
-    useState<StreamInfo | null>(
-      null
-    );
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [error, setError] =
-    useState("");
+  const [stream, setStream] = useState<StreamInfo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    loadStream();
-  }, []);
+    let mounted = true;
 
-  const loadStream =
-    async () => {
+    const loadStream = async () => {
       try {
-        const data =
-          await getCameraStream(
-            deviceId
-          );
+        setLoading(true);
+        setError("");
 
-        setStream(data);
+        const data = await getCameraStream(deviceId);
+        console.log(data);
+        if (mounted) {
+          setStream(data);
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Failed to fetch camera stream:", err);
 
-        setError(
-          "Unable to connect to camera."
-        );
+        if (mounted) {
+          setError("Unable to connect to camera.");
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
+
+    loadStream();
+
+    return () => {
+      mounted = false;
+    };
+  }, [deviceId]);
+
+  const streamUrl = stream?.rtspUrl;
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator
-          size="large"
-        />
+        <ActivityIndicator size="large" color="#3B82F6" />
 
-        <Text>
+        <Text style={styles.loadingText}>
           Connecting to camera...
         </Text>
       </View>
@@ -86,75 +71,112 @@ export default function LiveCameraScreen({
     <View style={styles.container}>
       <View style={styles.video}>
         {error ? (
-          <Text style={styles.error}>
-            {error}
-          </Text>
-        ) : (
+          <Text style={styles.error}>{error}</Text>
+        ) : streamUrl ? (
           <>
-            <Text style={styles.live}>
-              ● LIVE
-            </Text>
+            <Video
+              source={{ uri: streamUrl }}
+              style={styles.player}
+              controls
+              resizeMode="contain"
+              paused={false}
+              onError={(videoError) => {
+                console.error("Video playback error:", videoError);
+                setError(
+                  "Unable to play the camera stream. Check the stream URL and format."
+                );
+              }}
+              onLoad={() => {
+                console.log("Camera stream loaded successfully.");
+              }}
+            />
 
-            <Text style={styles.cameraText}>
-              Camera
-            </Text>
+            <View style={styles.liveBadge}>
+              <Text style={styles.live}>● LIVE</Text>
+            </View>
+          </>
+        ) : (
+          <View style={styles.placeholder}>
+            <Text style={styles.cameraText}>Camera</Text>
 
             <Text style={styles.streamText}>
-              {stream?.streamPath ||
-                stream?.streamUrl ||
-                "Waiting for WebRTC stream"}
+              No video stream URL was returned by the server.
             </Text>
-          </>
+          </View>
         )}
       </View>
 
-      <PTZControls
-        deviceId={deviceId}
-      />
+      <PTZControls deviceId={deviceId} />
     </View>
   );
 }
 
-const styles =
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: "#000",
-    },
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
+  },
 
-    video: {
-      height: 280,
-      backgroundColor: "#111827",
-      justifyContent: "center",
-      alignItems: "center",
-    },
+  video: {
+    height: 280,
+    backgroundColor: "#111827",
+    overflow: "hidden",
+  },
 
-    live: {
-      color: "#EF4444",
-      fontWeight: "900",
-      marginBottom: 15,
-    },
+  player: {
+    width: "100%",
+    height: "100%",
+  },
 
-    cameraText: {
-      color: "#fff",
-      fontSize: 24,
-      fontWeight: "800",
-    },
+  liveBadge: {
+    position: "absolute",
+    top: 12,
+    left: 12,
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
 
-    streamText: {
-      color: "#94A3B8",
-      marginTop: 10,
-      paddingHorizontal: 20,
-      textAlign: "center",
-    },
+  live: {
+    color: "#EF4444",
+    fontWeight: "900",
+  },
 
-    error: {
-      color: "#FCA5A5",
-    },
+  placeholder: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
 
-    center: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-    },
-  });
+  cameraText: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "800",
+  },
+
+  streamText: {
+    color: "#94A3B8",
+    marginTop: 10,
+    textAlign: "center",
+  },
+
+  error: {
+    color: "#FCA5A5",
+    textAlign: "center",
+    padding: 20,
+  },
+
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+  },
+
+  loadingText: {
+    color: "#fff",
+    marginTop: 12,
+  },
+});

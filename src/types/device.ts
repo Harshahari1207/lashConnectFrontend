@@ -32,6 +32,7 @@ export interface PairingToken {
 
 export interface StreamInfo {
   deviceId: string;
-  streamPath?: string;
+  rtspUrl?: string;
   streamUrl?: string;
+  streamPath?: string;
 }
