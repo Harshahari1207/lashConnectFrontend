@@ -1,24 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import Video from "react-native-video";
+import Video from 'react-native-video';
 
-import { getCameraStream } from "../../api/deviceApi";
-import PTZControls from "./PTZControls";
-import type { StreamInfo } from "../../types/device";
+import { getCameraStream } from '../../api/deviceApi';
+import PTZControls from './PTZControls';
+import type { StreamInfo } from '../../types/device';
 
 export default function LiveCameraScreen({ route }: any) {
   const { deviceId } = route.params;
 
   const [stream, setStream] = useState<StreamInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -26,7 +21,7 @@ export default function LiveCameraScreen({ route }: any) {
     const loadStream = async () => {
       try {
         setLoading(true);
-        setError("");
+        setError('');
 
         const data = await getCameraStream(deviceId);
         console.log(data);
@@ -34,10 +29,10 @@ export default function LiveCameraScreen({ route }: any) {
           setStream(data);
         }
       } catch (err) {
-        console.error("Failed to fetch camera stream:", err);
+        console.error('Failed to fetch camera stream:', err);
 
         if (mounted) {
-          setError("Unable to connect to camera.");
+          setError('Unable to connect to camera.');
         }
       } finally {
         if (mounted) {
@@ -53,16 +48,14 @@ export default function LiveCameraScreen({ route }: any) {
     };
   }, [deviceId]);
 
-  const streamUrl = stream?.rtspUrl;
+  const streamUrl = 'http://10.0.2.2:8888/camera1/index.m3u8';
 
   if (loading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#3B82F6" />
 
-        <Text style={styles.loadingText}>
-          Connecting to camera...
-        </Text>
+        <Text style={styles.loadingText}>Connecting to camera...</Text>
       </View>
     );
   }
@@ -75,19 +68,25 @@ export default function LiveCameraScreen({ route }: any) {
         ) : streamUrl ? (
           <>
             <Video
-              source={{ uri: streamUrl }}
+              source={{
+                uri: streamUrl,
+                type: 'm3u8',
+              }}
               style={styles.player}
-              controls
+              controls={true}
               resizeMode="contain"
               paused={false}
-              onError={(videoError) => {
-                console.error("Video playback error:", videoError);
-                setError(
-                  "Unable to play the camera stream. Check the stream URL and format."
-                );
-              }}
+              muted={true}
               onLoad={() => {
-                console.log("Camera stream loaded successfully.");
+                console.log('Camera stream loaded successfully.');
+              }}
+              onError={videoError => {
+                console.error(
+                  'Video playback error:',
+                  JSON.stringify(videoError, null, 2),
+                );
+
+                setError('Unable to play the simulated camera stream.');
               }}
             />
 
@@ -114,69 +113,69 @@ export default function LiveCameraScreen({ route }: any) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
   },
 
   video: {
     height: 280,
-    backgroundColor: "#111827",
-    overflow: "hidden",
+    backgroundColor: '#111827',
+    overflow: 'hidden',
   },
 
   player: {
-    width: "100%",
-    height: "100%",
+    width: '100%',
+    height: '100%',
   },
 
   liveBadge: {
-    position: "absolute",
+    position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 6,
   },
 
   live: {
-    color: "#EF4444",
-    fontWeight: "900",
+    color: '#EF4444',
+    fontWeight: '900',
   },
 
   placeholder: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: 20,
   },
 
   cameraText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: '800',
   },
 
   streamText: {
-    color: "#94A3B8",
+    color: '#94A3B8',
     marginTop: 10,
-    textAlign: "center",
+    textAlign: 'center',
   },
 
   error: {
-    color: "#FCA5A5",
-    textAlign: "center",
+    color: '#FCA5A5',
+    textAlign: 'center',
     padding: 20,
   },
 
   center: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#000",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
   },
 
   loadingText: {
-    color: "#fff",
+    color: '#fff',
     marginTop: 12,
   },
 });

@@ -1,4 +1,9 @@
 {
   "name": "LashConnectMobile",
-  "displayName": "LashConnectMobile"
+  "displayName": "LashConnectMobile",
+  "extra": {
+    "eas": {
+      "projectId": "2cfb0833-cb06-466f-b261-3edb0697d8ba"
+    }
+  }
 }

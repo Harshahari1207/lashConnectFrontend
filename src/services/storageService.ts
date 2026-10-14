@@ -45,9 +45,15 @@ export const removeUser = async () => {
   await AsyncStorage.removeItem(USER_KEY);
 };
 
-export const clearStorage = async () => {
-  await AsyncStorage.multiRemove([
-    TOKEN_KEY,
-    USER_KEY,
-  ]);
+export const clearStorage = async (): Promise<void> => {
+  try {
+    await Promise.all([
+      AsyncStorage.removeItem(TOKEN_KEY),
+      AsyncStorage.removeItem(USER_KEY),
+    ]);
+
+    console.log("Storage cleared successfully");
+  } catch (error) {
+    console.error("Failed to clear storage:", error);
+  }
 };
