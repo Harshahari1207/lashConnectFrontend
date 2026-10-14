@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useContext,
@@ -5,9 +6,7 @@ import React, {
   useState,
 } from "react";
 
-import {
-  User,
-} from "../types/auth";
+import type { User } from "../types/auth";
 
 import {
   login as loginService,
@@ -18,6 +17,7 @@ import {
 import {
   getToken,
   getUser,
+  saveUser,
 } from "../services/storageService";
 
 interface AuthContextValue {
@@ -36,41 +36,34 @@ interface AuthContextValue {
   ) => Promise<void>;
 
   logout: () => Promise<void>;
+
+  updateUser: (
+    updatedUser: User
+  ) => Promise<void>;
 }
 
-const AuthContext =
-  createContext<
-    AuthContextValue | undefined
-  >(undefined);
+const AuthContext = createContext<
+  AuthContextValue | undefined
+>(undefined);
 
 export const AuthProvider = ({
   children,
 }: {
   children: React.ReactNode;
 }) => {
-  const [user, setUser] =
-    useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
+  // Restore the logged-in user when the app starts.
   useEffect(() => {
-    restoreSession();
-  }, []);
-
-  const restoreSession =
-    async () => {
+    const restoreSession = async () => {
       try {
-        const token =
-          await getToken();
+        const token = await getToken();
 
-        const storedUser =
-          await getUser<User>();
+        const storedUser = await getUser<User>();
 
-        if (
-          token &&
-          storedUser
-        ) {
+        if (token && storedUser) {
           setUser(storedUser);
         }
       } catch (error) {
@@ -83,36 +76,68 @@ export const AuthProvider = ({
       }
     };
 
+    void restoreSession();
+  }, []);
+
+  // Login
   const login = async (
     email: string,
     password: string
-  ) => {
-    const loggedInUser =
-      await loginService(
-        email,
-        password
-      );
+  ): Promise<void> => {
+    const loggedInUser = await loginService(
+      email,
+      password
+    );
 
     setUser(loggedInUser);
   };
 
+  // Register
   const register = async (
     name: string,
     email: string,
     password: string
-  ) => {
-    const registeredUser =
-      await registerService(
-        name,
-        email,
-        password
-      );
+  ): Promise<void> => {
+    const registeredUser = await registerService(
+      name,
+      email,
+      password
+    );
 
     setUser(registeredUser);
   };
 
-  const logout = async () => {
+  // Update the user's profile information.
+  const updateUser = async (
+    updatedUser: User
+  ): Promise<void> => {
+    const normalizedUser: User = {
+      ...updatedUser,
+
+      // The profile API returns MongoDB's _id,
+      // while the existing auth flow uses id.
+      id:
+        updatedUser.id ||
+        updatedUser._id ||
+        user?.id ||
+        "",
+    };
+
+    // Persist the updated user across app restarts.
+    await saveUser(normalizedUser);
+
+    // Immediately refresh screens using useAuth().
+    setUser(normalizedUser);
+
+    console.log(
+      "User profile updated successfully"
+    );
+  };
+
+  // Logout
+  const logout = async (): Promise<void> => {
     await logoutService();
+
     setUser(null);
   };
 
@@ -124,6 +149,7 @@ export const AuthProvider = ({
         login,
         register,
         logout,
+        updateUser,
       }}
     >
       {children}
@@ -131,9 +157,8 @@ export const AuthProvider = ({
   );
 };
 
-export const useAuth = () => {
-  const context =
-    useContext(AuthContext);
+export const useAuth = (): AuthContextValue => {
+  const context = useContext(AuthContext);
 
   if (!context) {
     throw new Error(
