@@ -1,6 +1,7 @@
-export const API_URL = "https://lashconnectbackend.onrender.com/api";
 
-export const SOCKET_URL = "https://lashconnectbackend.onrender.com/";
+export const API_URL = "http://10.0.2.2:5000/api";
+
+export const SOCKET_URL = "http://10.0.2.2:5000/";
 
 export const APP_NAME = "Lash Connect";
 
